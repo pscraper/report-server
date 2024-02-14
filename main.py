@@ -1,15 +1,32 @@
 import uvicorn
-from fastapi import FastAPI, Response
-from fastapi.responses import JSONResponse
+import logging
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database.connection import conn
-from route.user import router as user_router
+from route.user_router import router as user_router
+from route.article_router import router as article_router
 
 
-app = FastAPI()
-app.include_router(user_router, prefix="/user")
+# 생명주기 -> app.on_event: Deprecated
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # startup
+    conn()
+    logging.info("startup")
+    
+    # 라우터 등록
+    app.include_router(user_router, prefix="/user")
+    app.include_router(article_router, prefix="/article")
+    
+    yield
+    
+
+app = FastAPI(lifespan=lifespan)    
+
+# 미들웨어 등록
 app.add_middleware(
-    CORSMiddleware,
+    middleware_class=CORSMiddleware,
     
     # 교차 출처 요청을 보낼 수 있는 출처의 리스트
     allow_origins=["http://localhost:3000"],
@@ -26,19 +43,6 @@ app.add_middleware(
     # Accept, Accept-Language, Content-Language, Contet-Type 헤더는 CORS 요청시 언제나 허용됨.
     allow_headers=["*"]
 )
-
-
-@app.on_event("startup")
-def startup():
-    conn()
-    
-    
-@app.post("/cookie")
-async def create_cookie():
-    content = {"message": "hi"}
-    response = JSONResponse(content)
-    response.set_cookie(key="fake", value="fake value")
-    return response
 
 
 def run():

@@ -7,6 +7,23 @@ from model.user import User, UserSignup
 router = APIRouter()
 
 
+@router.get("/{id}")
+async def get_user(
+    id: int,
+    session: Session = Depends(get_session)
+) -> User:
+    stat = select(User, id)
+    result = session.exec(stat).first()
+    
+    if result:
+        return result[0]
+    
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="CAN'T FIND USER ID"
+    ) 
+
+
 @router.get("/")
 async def get_all_users(
     session: Session = Depends(get_session)

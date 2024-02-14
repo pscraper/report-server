@@ -1,7 +1,7 @@
 from sqlmodel import Session, create_engine, SQLModel
 
 
-engine = create_engine("sqlite:///./api-server.db", connect_args={"check_same_thread": False})
+engine = create_engine("sqlite:///./report-server.db", connect_args={"check_same_thread": False})
 
 
 def conn():
