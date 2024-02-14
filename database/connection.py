@@ -1,15 +1,14 @@
-from sqlmodel import Session, create_engine, SQLModel
+import asyncio
+import aiosqlite
 
 
-engine = create_engine("sqlite:///./report-server.db", connect_args={"check_same_thread": False})
+# 비동기 데이터베이스 드라이버
+# https://www.encode.io/databases/
+# https://blog.neonkid.xyz/269
+# https://dev.to/arunanshub/async-database-operations-with-sqlmodel-c2o
+# https://hides.kr/1101 
+
+DB_CONN_URL = "sqlite+aiosqlite:///report-server.db"
 
 
-def conn():
-    SQLModel.metadata.create_all(engine)   
-
-
-def get_session():
-    with Session(engine) as session:
-        yield session
-
-
+pool = aiosqlite.connect(DB_CONN_URL)

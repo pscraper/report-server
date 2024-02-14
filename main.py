@@ -1,9 +1,8 @@
 import uvicorn
-import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database.connection import conn
+from database.connection import get_session
 from route.user_router import router as user_router
 from route.article_router import router as article_router
 
@@ -12,8 +11,7 @@ from route.article_router import router as article_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup
-    conn()
-    logging.info("startup")
+    await get_session()
     
     # 라우터 등록
     app.include_router(user_router, prefix="/user")

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from typing import Annotated
+from sqlalchemy.orm import Session
 from database.connection import get_session
 from model.user import User, UserSignup
 
@@ -10,10 +11,10 @@ router = APIRouter()
 @router.get("/{id}")
 async def get_user(
     id: int,
-    session: Session = Depends(get_session)
+    session: Annotated[Session, Depends(get_session)]
 ) -> User:
     stat = select(User, id)
-    result = session.exec(stat).first()
+    result = session.execute(stat).first()
     
     if result:
         return result[0]
@@ -26,7 +27,7 @@ async def get_user(
 
 @router.get("/")
 async def get_all_users(
-    session: Session = Depends(get_session)
+    session: Annotated[Session, Depends(get_session)]
 ) -> list[User]:
     stat = select(User)
     return session.exec(stat).all()

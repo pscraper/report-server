@@ -1,10 +1,7 @@
 from fastapi import APIRouter, Body, Cookie, Depends
-from sqlmodel import Session
 from typing import Annotated
-from database.connection import get_session
 from model.article import Article, CreateArticle
 from model.enums import UserRole
-from route.user_router import get_user
 from service.article_service import ArticleService
 
 
