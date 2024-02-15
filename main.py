@@ -1,21 +1,22 @@
 import uvicorn
+import json
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, File
 from fastapi.middleware.cors import CORSMiddleware
-from database.connection import get_session
-from route.user_router import router as user_router
-from route.article_router import router as article_router
+#from database.connection import get_session
+#from route.user_router import router as user_router
+#from route.article_router import router as article_router
 
 
 # 생명주기 -> app.on_event: Deprecated
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup
-    await get_session()
+    #await get_session()
     
     # 라우터 등록
-    app.include_router(user_router, prefix="/user")
-    app.include_router(article_router, prefix="/article")
+    #app.include_router(user_router, prefix="/user")
+    #app.include_router(article_router, prefix="/article")
     
     yield
     
@@ -41,6 +42,17 @@ app.add_middleware(
     # Accept, Accept-Language, Content-Language, Contet-Type 헤더는 CORS 요청시 언제나 허용됨.
     allow_headers=["*"]
 )
+
+
+@app.post("/file")
+def receive_result_file(
+    file: bytes = File()
+):
+    obj = json.loads(file.decode("utf8").replace("'", '"'))
+
+    with open("./result.json", "w", encoding = "utf8") as f:
+        json.dump(obj, f, ensure_ascii=False, indent = 4, sort_keys=True)
+
 
 
 def run():
