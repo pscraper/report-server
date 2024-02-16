@@ -28,7 +28,7 @@ async def get_user(
 
 @router.get("/")
 async def get_all_users(
-    session: Annotated[Session Depends(get_session)
+    session: Annotated[Session, Depends(get_session)]
 ) -> list[User]:
     stat = select(User)
     return session.exec(stat).all()

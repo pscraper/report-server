@@ -1,14 +1,18 @@
-import asyncio
-import aiosqlite
+from config.ini_config import Config, SQLITE
+from sqlmodel import SQLModel, Session, create_engine
 
 
-# 비동기 데이터베이스 드라이버
-# https://www.encode.io/databases/
-# https://blog.neonkid.xyz/269
-# https://dev.to/arunanshub/async-database-operations-with-sqlmodel-c2o
-# https://hides.kr/1101 
-
-DB_CONN_URL = "sqlite+aiosqlite:///report-server.db"
+engine = create_engine(
+    url = Config().read_value(SQLITE, "db_conn_url"), 
+    echo = True,
+    connect_args = {"check_same_thread": False}
+)
 
 
-pool = aiosqlite.connect(DB_CONN_URL)
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+    
+    
+def get_session():
+    with Session(engine) as session:
+        yield session
