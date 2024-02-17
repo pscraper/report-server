@@ -10,7 +10,6 @@ class Config:
     FILE_NAME = "config.ini"
     INI_PATH = Path(__file__).cwd() / FILE_NAME
     
-    
     def __init__(self):
         self.config = configparser.ConfigParser()
         

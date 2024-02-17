@@ -17,7 +17,7 @@ def signup(
 
 @router.get(path = "/{id}", status_code = status.HTTP_200_OK)
 def getUser(
-    id: Annotated[int, Path],
+    id: Annotated[int, Path()],
     userService: Annotated[UserService, Depends(UserService)]
 ) -> User:
     return userService.getUser(id)
