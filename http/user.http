@@ -1,0 +1,17 @@
+@endpoint = http://localhost:8000/user 
+
+
+###
+POST {{endpoint}}/ HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+    "email": "h970123321262212@gmail.com",
+    "password": "12345"
+}
+
+
+###
+GET {{endpoint}}/1 HTTP/1.1
+Accept: application/json
