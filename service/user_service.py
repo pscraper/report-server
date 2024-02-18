@@ -1,10 +1,9 @@
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from repository.user_repository import UserRepository
-from model.user import User, UserSignup, TokenResponse
-from database.transactional import Transactional
+from model.user import User, UserSignup, UserResponse, TokenResponse
 from auth.hash_password import HashPassword
-from auth.jwt_handler import create_access_token, verify_access_token
+from auth.jwt_handler import create_access_token
 
 
 class UserService:
@@ -41,7 +40,7 @@ class UserService:
         if not self.hashPassword.verify_hash(password, user.password):
             raise HTTPException(
                 status_code = status.HTTP_401_UNAUTHORIZED,
-                detail = "NO MATCH PASSWORD"
+                detail = "UNMATCHED PASSWORD"
             )
         
         return TokenResponse(
@@ -49,11 +48,11 @@ class UserService:
             token_type = "Bearer"
         )
 
-    def getUser(self, email: int) -> User:
+    def getUser(self, email: int) -> UserResponse:
         user = self.userRepository.findUserByEmail(email)
 
         if user:
-            return user
+            return UserResponse(id = user.id, email = user.email, role = user.role)
         
         raise HTTPException(
             status_code = status.HTTP_404_NOT_FOUND,

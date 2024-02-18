@@ -20,6 +20,12 @@ class UserSignup(BaseModel):
             password = self.password,
             role = UserRole.USER.value
         )
+    
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    role: UserRole
 
 
 class TokenResponse(BaseModel):

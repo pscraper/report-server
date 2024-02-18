@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, status, Body, Path
+from fastapi import APIRouter, Depends, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
-from model.user import User, UserSignup, TokenResponse
+from model.user import User, UserSignup, UserResponse, TokenResponse
 from service.user_service import UserService
 from auth.authenticate import authenticate
 
@@ -12,7 +12,7 @@ router = APIRouter()
 @router.post(path = "/signup", status_code = status.HTTP_201_CREATED)
 def signup(
     userSignup: Annotated[UserSignup, Body()],
-    userService: Annotated[UserService, Depends(UserService)]
+    userService: Annotated[UserService, Depends()]
 ) -> User:
     return userService.signup(userSignup)
     
@@ -28,6 +28,6 @@ def signin(
 @router.get(path = "/", status_code = status.HTTP_200_OK)
 def getUser(
     email: Annotated[str, Depends(authenticate)],
-    userService: Annotated[UserService, Depends(UserService)]
-) -> User:
+    userService: Annotated[UserService, Depends()]
+) -> UserResponse:
     return userService.getUser(email)
