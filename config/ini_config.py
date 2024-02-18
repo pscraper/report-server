@@ -25,6 +25,7 @@ class Config:
             self.config[APP]["port"] = "8000"
             self.config[APP]["workers"] = "2"
             self.config[APP]["name"] = "pscraper-api-server"
+            self.config[APP]["secret_key"] = "ADV32KODQJ2K1J31K24DSAQWE2K1FKDSL"
             self.config[SQLITE]["db_conn_url"] = "sqlite:///./api-server.db"
             
             with open(self.INI_PATH, mode="w") as f:

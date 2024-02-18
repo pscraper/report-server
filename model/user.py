@@ -20,5 +20,9 @@ class UserSignup(BaseModel):
             password = self.password,
             role = UserRole.USER.value
         )
-        
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
 
