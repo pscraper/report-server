@@ -8,6 +8,7 @@ class User(SQLModel, table = True):
     email: str = Field(nullable = False, unique = True)
     password: str = Field(nullable = False)
     role: UserRole = Field(default = UserRole.USER.value, nullable = False)
+    refresh_token: str = Field(nullable = True)
     
     
 class UserSignup(BaseModel):
@@ -30,5 +31,6 @@ class UserResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
 

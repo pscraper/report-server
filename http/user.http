@@ -7,7 +7,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "email": "seungsu@gmail.com",
+    "email": "seungsu123@gmail.com",
     "password": "12345"
 }
 
@@ -20,7 +20,7 @@ Accept: application/json
 --WebKitFormBoundaryAB
 Content-Disposition: form-data; name="username"
 
-seungsu@gmail.com
+seungsu123@gmail.com
 --WebKitFormBoundaryAB
 Content-Disposition: form-data; name="password"
 
@@ -30,5 +30,14 @@ Content-Disposition: form-data; name="password"
 
 ### JWT 테스트
 GET {{endpoint}}/ HTTP/1.1
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InNldW5nc3VAZ21haWwuY29tIiwiZXhwaXJlcyI6MTcwODIzODE0My4zNDU2Mzc2fQ.dUckcBsKuc4OX7ZpYa5EthxUw_C1SIMsgkLZqgAj8Tc
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InNldW5nc3VAZ21haWwuY29tIiwiZXhwaXJlcyI6MTcwODI2NjA5OC4xMDExNzU4fQ.aS7jdH7Ma2oDvzpseez76VUUW51tXMrfYVorTdXTV08
 Accept: application/json
+
+
+### 토큰 재발급
+POST {{endpoint}}/refresh HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+
+email=seungsu123@gmail.com
+

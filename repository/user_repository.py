@@ -9,7 +9,7 @@ class UserRepository:
     def __init__(self, session: Annotated[Session, Depends(get_session)]):
         self.session = session
     
-    def signup(self, user: User) -> User:
+    def addUser(self, user: User) -> User:
         try:
             self.session.add(user)
             self.session.commit()

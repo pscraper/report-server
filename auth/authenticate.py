@@ -1,14 +1,15 @@
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from auth.jwt_handler import verify_access_token
+from auth.jwt_handler import JWTHandler
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl = "/user/signin")
 
 
 async def authenticate(
-    token: Annotated[str, Depends(oauth2_scheme)]
+    token: Annotated[str, Depends(oauth2_scheme)],
+    jwtHandler: Annotated[JWTHandler, Depends()]
 ) -> str:
     if not token:
         raise HTTPException(
@@ -16,5 +17,5 @@ async def authenticate(
             detail = "UNAUTHORIZED"
         )
     
-    decoded_token = verify_access_token(token)
+    decoded_token = jwtHandler.verify_access_token(token)
     return decoded_token["username"]
