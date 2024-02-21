@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config.ini_config import Config, APP
 from route.user_router import router as user_router
 from route.article_router import router as article_router
+from route.file_router import router as file_router
 from database.connection import create_db_and_tables
 
 
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI):
     # 라우터 등록
     app.include_router(user_router, prefix = "/user")
     app.include_router(article_router, prefix = "/article")
+    app.include_router(file_router, prefix = "/file")
     create_db_and_tables()
     yield
     
