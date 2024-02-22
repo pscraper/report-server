@@ -3,13 +3,13 @@ from fastapi import HTTPException, status
 from typing import Any
 from datetime import datetime
 from jose import jwt, JWTError
-from config.ini_config import Config, APP
+from config.ini_config import IniConfig, APP
 
 
 
 class JWTHandler:
     def __init__(self):
-        self.config = Config()
+        self.config = IniConfig()
 
     def _create_token(self, payload: dict[str, Any], secret_key: str) -> str:
         token = jwt.encode(payload, secret_key, algorithm = "HS256")

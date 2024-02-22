@@ -1,12 +1,15 @@
 from typing import Annotated
-from fastapi import Depends, HTTPException, status
+from fastapi import Response, Depends, HTTPException, status
 from repository.user_repository import UserRepository
-from model.user import UserSignup, UserResponse, TokenResponse
+from model.user import User, UserSignup, UserResponse, TokenResponse
 from auth.hash_password import HashPassword
 from auth.jwt_handler import JWTHandler
+from uuid import uuid4
 
 
 class UserService:
+    session = dict()
+
     def __init__(
         self,
         userRepository: Annotated[UserRepository, Depends()],
@@ -31,7 +34,7 @@ class UserService:
             detail = f"DUPLICATED EMAIL ADDRESS {user.email}"
         )
     
-    def signin(self, username: str, password: str) -> TokenResponse:
+    def signinOAuth2(self, username: str, password: str) -> TokenResponse:
         user = self.userRepository.findUserByEmail(username)
 
         if not user:
@@ -56,6 +59,23 @@ class UserService:
             refresh_token = refresh_token,
             token_type = "Bearer"
         )
+    
+
+    def signinBasic(self, response: Response, user: User) -> User:
+        session_id = str(uuid4())
+        self.session[session_id] = user
+        access_token = self.jwtHandler.create_access_token(user.email)
+        refresh_token = self.jwtHandler.create_refresh_token(user.email)
+        session = f"session_id={session_id}"
+
+        response.headers["session_id"] = session_id
+        response.headers["set-cookie"] = session
+        response.headers["Authorization"] = access_token
+        response.headers["Authorization-refresh"] = refresh_token
+        user.refresh_token = refresh_token
+        self.userRepository.addUser(user)
+
+        return user
 
     def getUser(self, email: int) -> UserResponse:
         user = self.userRepository.findUserByEmail(email)
@@ -67,6 +87,19 @@ class UserService:
             status_code = status.HTTP_404_NOT_FOUND,
             detail = f"USER NOT EXISTS"
         )
+    
+
+    def getUserBySession(self, session_id: str) -> User:
+        user = self.session[session_id]
+
+        if not user:
+            raise HTTPException(
+                status_code = status.HTTP_401_UNAUTHORIZED,
+                detail = "Invalid Session"
+            )
+        
+        return user
+
     
     def refreshAllTokens(self, email: str) -> TokenResponse:
         user = self.userRepository.findUserByEmail(email)

@@ -2,14 +2,14 @@ import uvicorn
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from config.ini_config import Config, APP
+from config.ini_config import IniConfig, APP
 from route.user_router import router as user_router
 from route.article_router import router as article_router
 from database.connection import create_db_and_tables
 
 
 # ini config 
-config = Config()
+config = IniConfig()
 MAIN = config.read_value(APP, "app")
 HOST = config.read_value(APP, "host")
 PORT = config.read_value(APP, "port")
@@ -45,7 +45,10 @@ app.add_middleware(
     
     # 교차 출처를 지원하는 HTTP 요청 헤더 리스트, Default: []
     # Accept, Accept-Language, Content-Language, Contet-Type 헤더는 CORS 요청시 언제나 허용됨.
-    allow_headers = ["*"]
+    allow_headers = ["*"],
+
+    # 브라우저에게 노출할 헤더 
+    expose_headers = ["*"]
 )
 
 

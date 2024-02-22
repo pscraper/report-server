@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 from sqlmodel import Session, select
 from fastapi import Depends
 from database.connection import get_session
@@ -23,7 +23,7 @@ class UserRepository:
         finally:
             self.session.close()
 
-    def findUserById(self, id: int) -> User | None:
+    def findUserById(self, id: int) -> Optional[User]:
         try:
             return self.session.get(User, id)
         
@@ -33,7 +33,7 @@ class UserRepository:
         finally:
             self.session.close()
 
-    def findUserByEmail(self, email: str) -> User | None:
+    def findUserByEmail(self, email: str) -> Optional[User]:
         try:
             stat = select(User).where(User.email == email)
             return self.session.exec(stat).first()

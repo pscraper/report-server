@@ -6,7 +6,7 @@ SQLITE = "SQLITE"
 APP = "APP"
 
 # .INI 파일 관리 클래스 정의
-class Config:
+class IniConfig:
     FILE_NAME = "config.ini"
     INI_PATH = Path(__file__).cwd() / FILE_NAME
     

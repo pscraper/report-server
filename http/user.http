@@ -7,25 +7,37 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "email": "seungsu123@gmail.com",
+    "email": "seungsu12436@gmail.com",
     "password": "12345"
 }
 
 
-### 로그인
-POST {{endpoint}}/signin HTTP/1.1
+### OAuth2 로그인
+POST {{endpoint}}/signin/oauth2 HTTP/1.1
 Content-Type: multipart/form-data;boundary="WebKitFormBoundaryAB"
 Accept: application/json
 
 --WebKitFormBoundaryAB
 Content-Disposition: form-data; name="username"
 
-seungsu123@gmail.com
+seungsu12436@gmail.com
 --WebKitFormBoundaryAB
 Content-Disposition: form-data; name="password"
 
 12345
 --WebKitFormBoundaryAB--
+
+
+### HttpBasic 로그인
+POST {{endpoint}}/signin/basic HTTP/1.1
+Authorization: Basic seungsu12436@gmail.com:12345
+Accept: application/json
+
+
+### Session 기반 인증 테스트 
+GET {{endpoint}}/basic/me
+session_id: 58e5611a-fad2-4e4c-abdc-5fd058906d18;access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InNldW5nc3UxMjQzNkBnbWFpbC5jb20iLCJleHBpcmVzIjoxNzA4NjA4MzY2LjQxOTUyNjh9.9mx08anqoF-KaHBmS94k3F8iOXv_AM1qSIxkVQVdJMg
+Accept: application/json
 
 
 ### JWT 테스트
