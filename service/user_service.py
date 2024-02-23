@@ -66,7 +66,7 @@ class UserService:
         self.session[session_id] = user
         access_token = self.jwtHandler.create_access_token(user.email)
         refresh_token = self.jwtHandler.create_refresh_token(user.email)
-        session = f"session_id={session_id}"
+        session = f"JSESSIONID={session_id}"
 
         response.headers["session_id"] = session_id
         response.headers["set-cookie"] = session
