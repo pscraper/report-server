@@ -1,12 +1,12 @@
 from typing import Annotated, Optional
 from sqlmodel import Session, select
 from fastapi import Depends
-from database.connection import get_session
+from config.engine_config import EngineConfig
 from model.user import User
 
 
 class UserRepository:
-    def __init__(self, session: Annotated[Session, Depends(get_session)]):
+    def __init__(self, session: Annotated[Session, Depends(EngineConfig.get_session)]):
         self.session = session
     
     def addUser(self, user: User) -> User:

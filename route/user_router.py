@@ -31,7 +31,7 @@ def getMyInfo(
     request: Request,
     userService: Annotated[UserService, Depends()]
 ) -> User:
-    session_id = request.headers["Session_id"]
+    session_id = request.headers["session_id"]
     return userService.getUserBySession(session_id)
 
 

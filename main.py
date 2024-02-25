@@ -2,11 +2,11 @@ import uvicorn
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from config.ini_config import IniConfig, APP
+from config.ini_config import IniConfig, APP, SQLITE
+from config.engine_config import EngineConfig
 from route.user_router import router as user_router
 from route.article_router import router as article_router
 from route.file_router import router as file_router
-from database.connection import create_db_and_tables
 
 
 # ini config 
@@ -15,20 +15,25 @@ MAIN = config.read_value(APP, "app")
 HOST = config.read_value(APP, "host")
 PORT = config.read_value(APP, "port")
 WORKERS = config.read_value(APP, "workers")
+DB_CONN_URL = config.read_value(SQLITE, "db_conn_url")
 
 
 # 생명주기 메서드
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # DB 엔진 초기화
+    EngineConfig.remove_db_file()
+    EngineConfig.init_engine(DB_CONN_URL)
+    
     # 라우터 등록
     app.include_router(user_router, prefix = "/user")
     app.include_router(article_router, prefix = "/article")
     app.include_router(file_router, prefix = "/file")
-    create_db_and_tables()
     yield
     
 
 app = FastAPI(lifespan = lifespan)    
+
 
 # 미들웨어 등록
 app.add_middleware(

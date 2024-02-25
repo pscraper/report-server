@@ -1,7 +1,7 @@
 from typing import Annotated, Callable, Any
 from fastapi import Depends
 from sqlmodel import Session
-from database.connection import get_session
+from config.engine_config import EngineConfig
 
 
 class Transactional:
@@ -11,7 +11,7 @@ class Transactional:
     # 인스턴스가 호출되었을 때 실행
     def __call__(
         self, 
-        session: Annotated[Session, Depends(get_session)]
+        session: Annotated[Session, Depends(EngineConfig.get_session)]
     ) -> Callable:
         async def _transactional(*args, **kwargs) -> Any:
             try:

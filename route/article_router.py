@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Body, Cookie, Depends
 from typing import Annotated
 from model.article import Article, CreateArticle
-from model.enums import UserRole
 from service.article_service import ArticleService
 
 

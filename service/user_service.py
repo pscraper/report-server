@@ -63,17 +63,16 @@ class UserService:
 
     def signinBasic(self, response: Response, user: User) -> User:
         session_id = str(uuid4())
-        self.session[session_id] = user
         access_token = self.jwtHandler.create_access_token(user.email)
         refresh_token = self.jwtHandler.create_refresh_token(user.email)
-        session = f"JSESSIONID={session_id}"
 
-        response.headers["session_id"] = session_id
-        response.headers["set-cookie"] = session
+        response.headers["set-cookie"] = f"JSESSIONID={session_id}"
         response.headers["Authorization"] = access_token
         response.headers["Authorization-refresh"] = refresh_token
         user.refresh_token = refresh_token
+        
         self.userRepository.addUser(user)
+        self.session[session_id] = user
 
         return user
 
