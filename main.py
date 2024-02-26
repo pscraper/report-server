@@ -42,7 +42,7 @@ app.add_middleware(
     # 교차 출처 요청을 보낼 수 있는 출처의 리스트
     allow_origins = ["http://localhost:3000"],
     
-    # 교차 출처 요청시 쿠키 지원 여트
+    # 교차 출처 요청시 쿠키 지원 여부
     # 해당 설정이 True인 경우 origins는 모든 출처를 허용할 수 없다
     # -> allow_origins: ["*"] 불가, 출처를 특정해야 함 
     allow_credentials = True,    
