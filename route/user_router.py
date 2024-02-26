@@ -1,59 +1,107 @@
-from fastapi import APIRouter, Request, Response, Depends, status, Body, Form
+from fastapi import (
+    APIRouter, 
+    Response, 
+    Depends, 
+    Body, 
+    status,
+    HTTPException
+)
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlmodel import Session, select
 from typing import Annotated
+from datetime import datetime, timedelta
 from model.user import User, UserSignup, UserResponse, TokenResponse
-from service.user_service import UserService
-from auth.authenticate import basic_authenticate, oauth2_authenticate 
+from auth.jwt_handler import JWTHandler
+from auth.authenticate import basic_authenticate
+from auth.hash_password import HashPassword
+from config.transaction_route import TransactionRoute
+from config.engine_config import EngineConfig
+from uuid import uuid4
 
 
-router = APIRouter()
+router = APIRouter(route_class = TransactionRoute)
 
 
 @router.post(path = "/signup", status_code = status.HTTP_201_CREATED)
-def signup(
+async def signup(
     userSignup: Annotated[UserSignup, Body()],
-    userService: Annotated[UserService, Depends()]
+    session: Annotated[Session, Depends(EngineConfig.get_session)],
+    hashPassword: Annotated[HashPassword, Depends()]
 ) -> UserResponse:
-    return userService.signup(userSignup)
+    user = userSignup.toUser()
+    stat = select(User).where(User.email == user.email)
+    exist = session.exec(stat).first() != None
+
+    if not exist:
+        user.password = hashPassword.create_hash(user.password)
+        session.add(user)
+        session.commit()
+        return UserResponse(id = user.id, email = user.email, role = user.role)
     
+    raise HTTPException(
+        status_code = status.HTTP_409_CONFLICT,
+        detail = f"DUPLICATED EMAIL ADDRESS {user.email}"
+    )
 
+
+# HttpBasicAuth 
 @router.post(path = "/signin/basic", status_code = status.HTTP_200_OK)
-def signinBasic(
+async def signinBasic(
     response: Response,
+    session: Annotated[Session, Depends(EngineConfig.get_session)],
     user: Annotated[User, Depends(basic_authenticate)],
-    userService: Annotated[UserService, Depends()]
+    jwtHandler: Annotated[JWTHandler, Depends()]
 ) -> User:
-    return userService.signinBasic(response, user)
+    # session id, token 생성
+    session_id = str(uuid4())
+    access_token = await jwtHandler.create_access_token(user.email)
+    refresh_token = await jwtHandler.create_refresh_token(user.email)
+    
+    # http 응답 헤더 세팅   
+    expires = datetime.utcnow() + timedelta(days=1)
+    response.set_cookie("JSESSIONID", session_id, expires = expires)
+    response.headers["Authorization"] = access_token
+    response.headers["Authorization-refresh"] = refresh_token
+    user.refresh_token = refresh_token
+    
+    # 유저 정보 업데이트
+    session.add(user)
+    session.commit()
 
-
-@router.get(path = "/basic/me", status_code = status.HTTP_200_OK)
-def getMyInfo(
-    request: Request,
-    userService: Annotated[UserService, Depends()]
-) -> User:
-    session_id = request.headers["session_id"]
-    return userService.getUserBySession(session_id)
+    return user
 
 
 @router.post(path = "/signin/oauth2", status_code = status.HTTP_200_OK)
-def signinOAuth2(
+async def signinOAuth2(
     userForm: Annotated[OAuth2PasswordRequestForm, Depends()],
-    userService: Annotated[UserService, Depends()]
+    session: Annotated[Session, Depends(EngineConfig.get_session)],
+    hashPassword: Annotated[HashPassword, Depends()],
+    jwtHandler: Annotated[JWTHandler, Depends()]
 ) -> TokenResponse:
-    return userService.signinOAuth2(userForm.username, userForm.password)
+    stat = select(User).where(User.email == userForm.username)
+    user = session.exec(stat).first()
 
+    if not user:
+        raise HTTPException(
+            status_code = status.HTTP_400_BAD_REQUEST,
+            detail = "CAN'T FIND USER EMAIL {username}"
+        )
+    
+    if not hashPassword.verify_hash(userForm.password, user.password):
+        raise HTTPException(
+            status_code = status.HTTP_401_UNAUTHORIZED,
+            detail = "UNMATCHED PASSWORD"
+        )
+    
+    access_token = await jwtHandler.create_access_token(userForm.username)
+    refresh_token = await jwtHandler.create_refresh_token(userForm.username)
+    user.refresh_token = refresh_token
 
-@router.get(path = "/", status_code = status.HTTP_200_OK)
-def getUser(
-    email: Annotated[str, Depends(oauth2_authenticate)],
-    userService: Annotated[UserService, Depends()]
-) -> UserResponse:
-    return userService.getUser(email)
+    session.add(user)
+    session.commit()
 
-
-@router.post(path = "/refresh", status_code = status.HTTP_201_CREATED)
-def refreshAllTokens(
-    email: Annotated[str, Form()],
-    userService: Annotated[UserService, Depends()]
-) -> TokenResponse:
-    return userService.refreshAllTokens(email)
+    return TokenResponse(
+        access_token = access_token,
+        refresh_token = refresh_token,
+        token_type = "Bearer"
+    )

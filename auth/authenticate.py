@@ -1,10 +1,11 @@
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBasic, OAuth2PasswordBearer, HTTPBasicCredentials
+from sqlmodel import Session, select
 from auth.jwt_handler import JWTHandler
-from repository.user_repository import UserRepository
 from auth.hash_password import HashPassword
 from model.user import User
+from config.engine_config import EngineConfig
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl = "/user/signin/oauth2")
@@ -26,13 +27,15 @@ async def oauth2_authenticate(
 
 
 async def basic_authenticate(
+    session: Annotated[Session, Depends(EngineConfig.get_session)],
     credentials: Annotated[HTTPBasicCredentials, Depends(basic_security)],
-    userRepository: Annotated[UserRepository, Depends()],
     hashPassword: Annotated[HashPassword, Depends()]
 ) -> User:
     username = credentials.username
     password = credentials.password
-    user = userRepository.findUserByEmail(username)
+    stat = select(User).where(User.email == username)
+    user = session.exec(stat).first()
+
     if not user or not hashPassword.verify_hash(password, user.password):
         raise HTTPException(
             status_code = status.HTTP_401_UNAUTHORIZED,

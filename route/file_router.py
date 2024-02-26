@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.head(path = "/check")
-def check_file(
+async def check_file(
     filename: Annotated[str, Query()],
     category: Annotated[str, Query()],
     md5: Annotated[str, Query()],

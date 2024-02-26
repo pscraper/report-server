@@ -22,7 +22,7 @@ DB_CONN_URL = config.read_value(SQLITE, "db_conn_url")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # DB 엔진 초기화
-    EngineConfig.remove_db_file()
+    #EngineConfig.remove_db_file()
     EngineConfig.init_engine(DB_CONN_URL)
     
     # 라우터 등록
@@ -48,7 +48,7 @@ app.add_middleware(
     allow_credentials = True,    
     
     # 교차 출처 요청을 허용하는 HTTP 메소드 리스트, Default: ['GET']
-    allow_methods = ["*"],
+    allow_methods = ["GET", "POST", "OPTIONS", "HEAD", "PUT", "PATCH", "DELETE"],
     
     # 교차 출처를 지원하는 HTTP 요청 헤더 리스트, Default: []
     # Accept, Accept-Language, Content-Language, Contet-Type 헤더는 CORS 요청시 언제나 허용됨.
