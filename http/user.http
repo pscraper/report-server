@@ -40,6 +40,15 @@ session_id: 58e5611a-fad2-4e4c-abdc-5fd058906d18;access_token=eyJhbGciOiJIUzI1Ni
 Accept: application/json
 
 
+### Session 기반 인증 테스트 2
+POST {{endpoint}}/ HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+    "session_id": "50e27fc9-bdbf-4d10-8c6f-c12d2121b226"
+}
+
 ### JWT 테스트
 GET {{endpoint}}/ HTTP/1.1
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InNldW5nc3VAZ21haWwuY29tIiwiZXhwaXJlcyI6MTcwODI2NjA5OC4xMDExNzU4fQ.aS7jdH7Ma2oDvzpseez76VUUW51tXMrfYVorTdXTV08

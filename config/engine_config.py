@@ -13,16 +13,16 @@ class EngineConfig:
         SQLModel.metadata.create_all(cls._engine_)
 
     @classmethod
-    def get_engine(self) -> Engine:
-        return self._engine_
+    def get_engine(cls) -> Engine:
+        return cls._engine_
 
     @classmethod
-    def remove_db_file(self) -> None:
+    def remove_db_file(cls) -> None:
         file = Path.cwd() / "api-server.db"
         if file.exists() and file.is_file():
             file.unlink()
     
     @classmethod
-    def get_session(self):
-        with Session(self._engine_) as session:
+    def get_session(cls):
+        with Session(cls._engine_) as session:
             yield session
