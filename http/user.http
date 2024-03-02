@@ -35,19 +35,8 @@ Accept: application/json
 
 
 ### Session 기반 인증 테스트 
-GET {{endpoint}}/basic/me
-session_id: 58e5611a-fad2-4e4c-abdc-5fd058906d18;access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InNldW5nc3UxMjQzNkBnbWFpbC5jb20iLCJleHBpcmVzIjoxNzA4NjA4MzY2LjQxOTUyNjh9.9mx08anqoF-KaHBmS94k3F8iOXv_AM1qSIxkVQVdJMg
-Accept: application/json
+GET {{endpoint}}/info/dc7b56af-0960-4e34-87d2-5c868dfd4b99
 
-
-### Session 기반 인증 테스트 2
-POST {{endpoint}}/ HTTP/1.1
-Accept: application/json
-Content-Type: application/json
-
-{
-    "session_id": "50e27fc9-bdbf-4d10-8c6f-c12d2121b226"
-}
 
 ### JWT 테스트
 GET {{endpoint}}/ HTTP/1.1

@@ -6,7 +6,7 @@ class RedisDriver:
         self.redis_url = "redis://127.0.0.1:6379"
         self.redis_client = aioredis.from_url(self.redis_url)
 
-    async def set_key(self, key, val, ttl = 60):
+    async def set_key(self, key, val, ttl = 3600):
         await self.redis_client.set(key, val)
         if ttl:
             await self.redis_client.expire(key, ttl)

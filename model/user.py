@@ -1,3 +1,4 @@
+import json
 from pydantic import BaseModel
 from sqlmodel import SQLModel, Field
 from model.enums import UserRole
@@ -10,12 +11,12 @@ class User(SQLModel, table = True):
     role: UserRole = Field(default = UserRole.USER.value, nullable = False)
     refresh_token: str = Field(nullable = True)
     
-    
+
 class UserSignup(BaseModel):
     email: str 
     password: str
     
-    def toUser(self) -> User:
+    def to_user(self) -> User:
         return User(
             email = self.email,
             password = self.password,
@@ -33,4 +34,3 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str
-
