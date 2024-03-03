@@ -109,11 +109,42 @@ async def signinOAuth2(
     )
 
 
+@router.get("/valid/{session_id}")
+async def is_valid_session_id(
+    session_id: Annotated[str, Path()],
+    redis_driver: Annotated[RedisDriver, Depends()]
+) -> bool:
+    user = await redis_driver.get_key(session_id)
+    return user != None
+
+
 @router.get("/info/{session_id}")
 async def get_user_by_session_id(
     session_id: Annotated[str, Path()],
     redis_driver: Annotated[RedisDriver, Depends()]
 ) -> UserResponse:
     user = await redis_driver.get_key(session_id)
-    user = json.loads(user)
-    return UserResponse(id = user['id'], email = user['email'], role = user['role'])
+
+    if not user:
+        raise HTTPException(
+            status_code = status.HTTP_404_NOT_FOUND,
+            detail = "Invalid Session ID"
+        )
+    
+    try:
+        user = json.loads(user)
+        return UserResponse(id = user['id'], email = user['email'], role = user['role'])
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code = status.HTTP_400_BAD_REQUEST,
+            detail = e
+        )
+
+
+@router.get("/signout/{session_id}")
+async def signout(
+    session_id: Annotated[str, Path()],
+    redis_driver: Annotated[RedisDriver, Depends()]
+) -> None:
+    await redis_driver.del_key(session_id)

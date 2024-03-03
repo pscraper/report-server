@@ -15,3 +15,6 @@ class RedisDriver:
     async def get_key(self, key):
         return await self.redis_client.get(key)
     
+    async def del_key(self, key):
+        return await self.redis_client.delete(key)
+    
