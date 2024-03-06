@@ -1,12 +1,13 @@
 import json
 from fastapi import (
     APIRouter, 
+    Request,
     Response, 
     Depends, 
     Body, 
     Path,
     status,
-    HTTPException
+    HTTPException,
 )
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm
@@ -14,7 +15,7 @@ from sqlmodel import Session, select
 from typing import Annotated
 from model.user import User, UserSignup, UserResponse, TokenResponse
 from auth.jwt_handler import JWTHandler
-from auth.authenticate import basic_authenticate
+from auth.authenticate import basic_authenticate, oauth2_authenticate
 from auth.hash_password import HashPassword
 from config.engine_config import EngineConfig
 from config.redis_driver import RedisDriver
@@ -109,8 +110,37 @@ async def signinOAuth2(
     )
 
 
+@router.get("/refresh")
+async def refresh_all_token(
+    request: Request,
+    response: Response,
+    session: Annotated[Session, Depends(EngineConfig.get_session)],
+    jwt_handler: Annotated[JWTHandler, Depends()]
+) -> int:
+    try:
+        refresh_token = request.headers['Authorization-Refresh']
+        username = await jwt_handler.verify_refresh_token(refresh_token)
+        stat = select(User).where(User.email == username)
+        user = session.exec(stat).first()
+
+        access_token = await jwt_handler.create_access_token(username)
+        refresh_token = await jwt_handler.create_refresh_token(username)
+        response.headers['Token-Type'] = "Bearer"
+        response.headers['Authorization'] = access_token
+        response.headers['Authorization-Refresh'] = refresh_token
+        user.refresh_token = refresh_token
+        session.add(user)
+
+        return 1
+
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e)
+
+
 @router.get("/valid/{session_id}")
 async def is_valid_session_id(
+    user_email: Annotated[str, Depends(oauth2_authenticate)],
     session_id: Annotated[str, Path()],
     redis_driver: Annotated[RedisDriver, Depends()]
 ) -> bool:
@@ -120,6 +150,7 @@ async def is_valid_session_id(
 
 @router.get("/info/{session_id}")
 async def get_user_by_session_id(
+    user_email: Annotated[str, Depends(oauth2_authenticate)],
     session_id: Annotated[str, Path()],
     redis_driver: Annotated[RedisDriver, Depends()]
 ) -> UserResponse:

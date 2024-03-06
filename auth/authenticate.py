@@ -22,7 +22,7 @@ async def oauth2_authenticate(
             detail = "UNAUTHORIZED"
         )
     
-    decoded_token = jwtHandler.verify_access_token(token)
+    decoded_token = await jwtHandler.verify_access_token(token)
     return decoded_token["username"]
 
 

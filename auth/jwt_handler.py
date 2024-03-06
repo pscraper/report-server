@@ -1,7 +1,7 @@
 import time
+from datetime import datetime
 from fastapi import HTTPException, status
 from typing import Any
-from datetime import datetime
 from jose import jwt, JWTError
 from config.ini_config import IniConfig, APP
 
@@ -16,7 +16,7 @@ class JWTHandler:
 
 
     async def create_access_token(self, username: str) -> str:
-        payload = {"username": username, "expires": time.time() + 1800}
+        payload = {"username": username, "expires": time.time() + 18}
         secret_key = self.config.read_value(APP, "secret_key")
         return await self._create_token(payload, secret_key)
 
@@ -27,7 +27,7 @@ class JWTHandler:
         return await self._create_token(payload, secret_key)
 
 
-    async def _verify_token(self, token: str, secret_key: str) -> dict[str, Any]:
+    async def _verify_token(self, token: str, secret_key: str) -> str:
         try:
             data = jwt.decode(token, secret_key, algorithms = "HS256")
             expire = data.get("expires")
@@ -44,7 +44,7 @@ class JWTHandler:
                     detail = "Token Expired"
                 )
             
-            return data
+            return data['username']
 
         except JWTError as e:
             raise HTTPException(
@@ -53,12 +53,12 @@ class JWTHandler:
             )
 
 
-    async def verify_access_token(self, token: str) -> dict[str, Any]:
+    async def verify_access_token(self, token: str) -> str:
         secret_key = self.config.read_value(APP, "secret_key")
         return await self._verify_token(token, secret_key)
 
 
-    async def verify_refresh_token(self, token: str) -> dict[str, Any]:
+    async def verify_refresh_token(self, token: str) -> str:
         secret_key = self.config.read_value(APP, "refresh_secret_key")
         return await self._verify_token(token, secret_key)
 

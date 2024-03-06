@@ -2,8 +2,9 @@ import hashlib
 import os
 from starlette.responses import FileResponse
 from typing import Annotated, Any
-from fastapi import APIRouter, File, Form, Query, HTTPException, status
+from fastapi import APIRouter, File, Form, Query, HTTPException, status, Request, Depends
 from pathlib import Path
+from auth.jwt_handler import JWTHandler
 from model.enums import Category
 
 
@@ -56,23 +57,38 @@ async def get_file_list_by_category(
     result = []
 
     for file in files:
-        with open(file, "r", encoding = "utf8") as f:
-            res = f.read()       
-            result.append({
-                "fileName": file.name,
-                "fileDesc": res
-            })
+        if file.name.endswith(".txt") or file.name.endswith(".json"):
+            with open(file, "r", encoding = "utf8") as f:
+                res = f.read()       
+
+        else:
+            with open(file, "rb") as f:
+                res = f.read()
+
+        result.append({
+            "fileName": file.name,
+            "fileDesc": str(res)
+        })
 
     return {"result": result}
 
 
 @router.get(path = "/download/{category}/{filename}")
 async def download_file(
+    request: Request,
     category: Annotated[Category, Path()],
-    filename: Annotated[str, Path()]
+    filename: Annotated[str, Path()],
+    jwt_handler: Annotated[JWTHandler, Depends()]
 ) -> FileResponse:
-    file_path = find_file(category, filename)
-    return FileResponse(path = file_path)
+    try:
+        access_token = request.headers['Authorization'].split()[1]
+        print(access_token)
+        username = await jwt_handler.verify_access_token(access_token)
+        file_path = find_file(category, filename)
+        return FileResponse(path = file_path, media_type="application/octet-stream", filename=filename)
+    
+    except Exception as _:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=_)
 
     
 def find_storage(category: Category) -> Path:
