@@ -22,8 +22,11 @@ async def oauth2_authenticate(
             detail = "UNAUTHORIZED"
         )
     
-    decoded_token = await jwtHandler.verify_access_token(token)
-    return decoded_token["username"]
+    success, data = await jwtHandler.verify_access_token(token)
+    if success:
+        return data["username"]
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 async def basic_authenticate(

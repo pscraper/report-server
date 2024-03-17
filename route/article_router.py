@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from model.enums import Category
+from const import Category
 
 
 router = APIRouter()

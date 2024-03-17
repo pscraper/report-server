@@ -5,7 +5,8 @@ from typing import Annotated, Any
 from fastapi import APIRouter, File, Form, Query, HTTPException, status, Request, Depends
 from pathlib import Path
 from auth.jwt_handler import JWTHandler
-from model.enums import Category
+from const import Category
+from auth.authenticate import oauth2_authenticate
 
 
 router = APIRouter()
@@ -18,7 +19,7 @@ async def check_file(
     md5: Annotated[str, Query()],
     sha256: Annotated[str, Query()]
 ) -> None:
-    file_path = find_file(category, filename)
+    file_path = await find_file(category, filename)
     
     with open(file_path, "rb") as fp:
         binary = fp.read()
@@ -40,17 +41,10 @@ async def upload_result_file(
         fp.write(file)
         
 
-@router.get(path = "/office", status_code = status.HTTP_200_OK)
-async def trigger_office_download() -> None:
-    setup = Path.cwd() / "storage" / "setup.exe"
-    xml = Path.cwd() / "storage" / "Office365ProPlus_x64.xml"
-    cmd = f"start /b {str(setup)} /download {str(xml)}"
-    os.system(cmd)
-
-
 @router.get(path = "/{category}")
-async def get_file_list_by_category(
-    category: Annotated[Category, Path()]
+def get_file_list_by_category(
+    category: Annotated[Category, Path()],
+    username: Annotated[str, Depends(oauth2_authenticate)],
 ) -> dict[str, Any]:
     storage = find_storage(category)
     files = filter(lambda file: file.is_file(), storage.iterdir())
@@ -75,15 +69,11 @@ async def get_file_list_by_category(
 
 @router.get(path = "/download/{category}/{filename}")
 async def download_file(
-    request: Request,
+    username: Annotated[str, Depends(oauth2_authenticate)],
     category: Annotated[Category, Path()],
     filename: Annotated[str, Path()],
-    jwt_handler: Annotated[JWTHandler, Depends()]
 ) -> FileResponse:
     try:
-        access_token = request.headers['Authorization'].split()[1]
-        print(access_token)
-        username = await jwt_handler.verify_access_token(access_token)
         file_path = find_file(category, filename)
         return FileResponse(path = file_path, media_type="application/octet-stream", filename=filename)
     

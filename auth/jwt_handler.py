@@ -1,8 +1,7 @@
 import time
 from datetime import datetime
-from fastapi import HTTPException, status
 from typing import Any
-from jose import jwt, JWTError
+from jose import jwt
 from config.ini_config import IniConfig, APP
 
 
@@ -16,7 +15,7 @@ class JWTHandler:
 
 
     async def create_access_token(self, username: str) -> str:
-        payload = {"username": username, "expires": time.time() + 18}
+        payload = {"username": username, "expires": time.time() + 900}
         secret_key = self.config.read_value(APP, "secret_key")
         return await self._create_token(payload, secret_key)
 
@@ -27,38 +26,25 @@ class JWTHandler:
         return await self._create_token(payload, secret_key)
 
 
-    async def _verify_token(self, token: str, secret_key: str) -> str:
-        try:
-            data = jwt.decode(token, secret_key, algorithms = "HS256")
-            expire = data.get("expires")
+    async def _verify_token(self, token: str, secret_key: str) -> tuple[bool, dict[str, Any]]:
+        data = jwt.decode(token, secret_key, algorithms = "HS256")
+        expire = data.get("expires")
 
-            if expire is None:
-                raise HTTPException(
-                    status_code = status.HTTP_401_UNAUTHORIZED,
-                    detail = "No Access Token Supplied"
-                )
-            
-            if datetime.utcnow() > datetime.utcfromtimestamp(expire):
-                raise HTTPException(
-                    status_code = status.HTTP_401_UNAUTHORIZED,
-                    detail = "Token Expired"
-                )
-            
-            return data['username']
-
-        except JWTError as e:
-            raise HTTPException(
-                status_code = status.HTTP_400_BAD_REQUEST,
-                detail = e
-            )
+        if expire is None:
+            return False, data
+        
+        if datetime.utcnow() > datetime.utcfromtimestamp(expire):
+            return False, data
+        
+        return True, data
 
 
-    async def verify_access_token(self, token: str) -> str:
+    async def verify_access_token(self, token: str) -> tuple[bool, dict[str, Any]]:
         secret_key = self.config.read_value(APP, "secret_key")
         return await self._verify_token(token, secret_key)
 
 
-    async def verify_refresh_token(self, token: str) -> str:
+    async def verify_refresh_token(self, token: str) -> tuple[bool, dict[str, Any]]:
         secret_key = self.config.read_value(APP, "refresh_secret_key")
         return await self._verify_token(token, secret_key)
 

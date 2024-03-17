@@ -21,7 +21,7 @@ DB_CONN_URL = config.read_value(SQLITE, "db_conn_url")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # DB 엔진 초기화
-    #EngineConfig.remove_db_file()
+    # EngineConfig.remove_db_file()
     EngineConfig.init_engine(DB_CONN_URL)
     
     # 라우터 등록

@@ -1,25 +1,32 @@
 import json
+from typing import Optional
+from datetime import datetime
 from fastapi import (
     APIRouter, 
     Request,
     Response, 
     Depends, 
     Body, 
+    File,
     Path,
+    Form,
     status,
     HTTPException,
 )
-from fastapi.encoders import jsonable_encoder
+from pathlib import Path as Pathlib
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from typing import Annotated
-from model.user import User, UserSignup, UserResponse, TokenResponse
 from auth.jwt_handler import JWTHandler
 from auth.authenticate import basic_authenticate, oauth2_authenticate
 from auth.hash_password import HashPassword
 from config.engine_config import EngineConfig
 from config.redis_driver import RedisDriver
-from uuid import uuid4
+from model.user import (
+    User, 
+    UserSigninRes,
+    TokenResponse
+)
 
 
 router = APIRouter()
@@ -28,24 +35,50 @@ router = APIRouter()
 @router.post(path = "/signup", status_code = status.HTTP_201_CREATED)
 async def signup(
     session: Annotated[Session, Depends(EngineConfig.get_session)],
-    user_signup: Annotated[UserSignup, Body()],
-    hash_password: Annotated[HashPassword, Depends()]
-) -> UserResponse:
-    user = user_signup.to_user()
-    stat = select(User).where(User.email == user.email)
+    email: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    hash_password: Annotated[HashPassword, Depends()],
+) -> None:
+    stat = select(User).where(User.email == email)
     exist = session.exec(stat).first() != None
 
-    if not exist:
-        user.password = hash_password.create_hash(user.password)
-        session.add(user)
-        session.commit()
-        return UserResponse(id = user.id, email = user.email, role = user.role)
+    if exist:
+        raise HTTPException(status.HTTP_409_CONFLICT)
     
-    raise HTTPException(
-        status_code = status.HTTP_409_CONFLICT,
-        detail = f"DUPLICATED EMAIL ADDRESS {user.email}"
+    user = User(
+        email = email, 
+        password = hash_password.create_hash(password),
     )
 
+    session.add(user)
+    session.commit()
+
+
+@router.post("/file")
+async def userProfileImage(
+    session: Annotated[Session, Depends(EngineConfig.get_session)],
+    email: Annotated[str, Form()],
+    filename: Annotated[str, Form()],
+    image: Annotated[bytes, Form()]
+) -> None:
+    stat = select(User).where(User.email == email)
+    user = session.exec(stat).first()
+
+    if not user:
+        raise HTTPException(status_code = status.HTTP_400_BAD_REQUEST)
+
+    upload_path = Pathlib.cwd() / "storage" / "user"
+    
+    if not upload_path.exists():
+        upload_path.mkdir(parents = True)
+
+    with open(upload_path / filename, "wb") as f:
+        f.write(image)
+
+    user.profile_image = upload_path / filename
+    session.add(user)
+    session.commit()
+    
 
 # HttpBasicAuth 
 @router.post(path = "/signin/basic", status_code = status.HTTP_200_OK)
@@ -54,24 +87,27 @@ async def signinBasic(
     session: Annotated[Session, Depends(EngineConfig.get_session)],
     user: Annotated[User, Depends(basic_authenticate)],
     jwt_handler: Annotated[JWTHandler, Depends()],
-    redis_driver: Annotated[RedisDriver, Depends()]
-) -> bool:
-    # session id, token 생성
-    session_id = str(uuid4())
+) -> UserSigninRes:
+    # token 생성
     access_token = await jwt_handler.create_access_token(user.email)
     refresh_token = await jwt_handler.create_refresh_token(user.email)
     
     # http 응답 헤더 세팅   
-    response.headers["Authorization-session"] = session_id
     response.headers["Authorization"] = access_token
     response.headers["Authorization-refresh"] = refresh_token
     user.refresh_token = refresh_token
+    user.last_login_date = datetime.now()
     
     # 유저 정보 업데이트
-    await redis_driver.set_key(session_id, json.dumps(jsonable_encoder(user)))
     session.add(user)
     session.commit()
-    return True
+
+    return UserSigninRes(
+        email = user.email, 
+        profile_image = user.profile_image,
+        role = user.role,
+        last_login_date = user.last_login_date,
+    )
 
 
 @router.post(path = "/signin/oauth2", status_code = status.HTTP_200_OK)
@@ -117,25 +153,21 @@ async def refresh_all_token(
     session: Annotated[Session, Depends(EngineConfig.get_session)],
     jwt_handler: Annotated[JWTHandler, Depends()]
 ) -> int:
-    try:
-        refresh_token = request.headers['Authorization-Refresh']
-        username = await jwt_handler.verify_refresh_token(refresh_token)
-        stat = select(User).where(User.email == username)
-        user = session.exec(stat).first()
+    refresh_token = request.headers['Authorization-Refresh']
+    success, payload = await jwt_handler.verify_refresh_token(refresh_token)
+    username = payload['username']
+    stat = select(User).where(User.email == username)
+    user = session.exec(stat).first()
 
-        access_token = await jwt_handler.create_access_token(username)
-        refresh_token = await jwt_handler.create_refresh_token(username)
-        response.headers['Token-Type'] = "Bearer"
-        response.headers['Authorization'] = access_token
-        response.headers['Authorization-Refresh'] = refresh_token
-        user.refresh_token = refresh_token
-        session.add(user)
+    access_token = await jwt_handler.create_access_token(username)
+    refresh_token = await jwt_handler.create_refresh_token(username)
+    response.headers['Token-Type'] = "Bearer"
+    response.headers['Authorization'] = access_token
+    response.headers['Authorization-Refresh'] = refresh_token
+    user.refresh_token = refresh_token
+    session.add(user)
 
-        return 1
-
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=e)
+    return 1
 
 
 @router.get("/valid/{session_id}")
@@ -146,31 +178,6 @@ async def is_valid_session_id(
 ) -> bool:
     user = await redis_driver.get_key(session_id)
     return user != None
-
-
-@router.get("/info/{session_id}")
-async def get_user_by_session_id(
-    user_email: Annotated[str, Depends(oauth2_authenticate)],
-    session_id: Annotated[str, Path()],
-    redis_driver: Annotated[RedisDriver, Depends()]
-) -> UserResponse:
-    user = await redis_driver.get_key(session_id)
-
-    if not user:
-        raise HTTPException(
-            status_code = status.HTTP_404_NOT_FOUND,
-            detail = "Invalid Session ID"
-        )
-    
-    try:
-        user = json.loads(user)
-        return UserResponse(id = user['id'], email = user['email'], role = user['role'])
-    
-    except Exception as e:
-        raise HTTPException(
-            status_code = status.HTTP_400_BAD_REQUEST,
-            detail = e
-        )
 
 
 @router.get("/signout/{session_id}")
